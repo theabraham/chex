@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ncurses.h>
+#include <panel.h>
 
 #define true  1
 #define false 0
@@ -13,5 +14,6 @@ enum colors {
 };
 
 #include "display.h"
+#include "route.h"
 
 #endif

@@ -19,6 +19,7 @@ void initncurses()
         init_pair(YELLOW, COLOR_YELLOW, COLOR_YELLOW);
         init_pair(MAGENTA, COLOR_MAGENTA, COLOR_MAGENTA);
         init_pair(ORANGE, COLOR_YELLOW, COLOR_YELLOW);
+        use_default_colors();
     } else {
         fprintf(stderr, "[Error] Your terminal does not support colors.\n");
         endwin();
@@ -30,14 +31,6 @@ void quit()
 {
     dispfree();
     endwin();
-}
-
-bool route(int ch)
-{
-    if (ch == 'q')
-        return false;
-    
-    return true;
 }
 
 int main(int argc, char *argv[])

@@ -7,4 +7,8 @@ void dispfree();
 
 void dispdraw();
 
+void mvcol(int n);
+
+void mvline(int n);
+
 #endif

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -gstabs -lpanel -lncurses
 
-chex: chex.c display.c
+chex: chex.c display.c route.c
 	$(CC) $^ $(CFLAGS) -o $@
 
 clean:
