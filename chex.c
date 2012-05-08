@@ -5,7 +5,7 @@ void initncurses()
 {
     initscr();
     noecho();
-    cbreak();
+    raw();
     keypad(stdscr, true);
 
     if (has_colors()) {
@@ -27,22 +27,17 @@ void initncurses()
     }
 }
 
-void quit()
-{
-    dispfree();
-    endwin();
-}
-
 int main(int argc, char *argv[])
 {
     initncurses();
-    dispinit(argv[1]);
+    buf_init(argv[1]); // TODO: command-line argument, help dialogue 
 
     do {
-        dispdraw();
+        buf_draw();
     } while (route(getch()));
 
-    quit();
+    buf_free();
+    endwin();
     return 0;
 }
 
