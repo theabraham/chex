@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include "common.h"
 
 void initncurses()

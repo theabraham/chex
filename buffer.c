@@ -60,9 +60,6 @@ static bool inbounds(int index)
 
 static void mvline(int n)
 {
-    if (!(n == -1 || n == 1)) // ghetto, expects +/- 1
-        return;
-
     int index = buf.index+(n*buf.bpline);
     if (inbounds(index))
         buf.index = index;
@@ -70,20 +67,22 @@ static void mvline(int n)
 
 static void mvcol(int n)
 {
-    if (!(n == -1 || n == 1)) // ghetto, expects +/- 1
-        return;
-
     int index = buf.index;
     bool nybble = buf.nybble;
     if (buf.mode == HEX) {
-        if (nybble) {
-            nybble = false;
-            if (n == 1)
-                index++;
-        } else {
-            nybble = true;
-            if (n == -1)
-                index--;
+        // in hex mode, 2-columns represent one index value, and odd columns
+        // represent the lower nybble of the current byte
+        index += n/2;
+        if (n%2 != 0) {
+            if (nybble) {
+                nybble = false;
+                if (n > 0)
+                    index++;
+            } else {
+                nybble = true;
+                if (n < 0)
+                    index--;
+            }
         }
     } else {
         index += n;
@@ -163,26 +162,33 @@ void buf_setstate(states_t state)
 
 void buf_repc(char ch)
 {
+    int index = buf.index;
+    bool nybble = buf.nybble;
     if (buf.mode == HEX && ishexnumber(ch)) {
-        char orig = buf.mem[buf.index];
+        char orig = buf.mem[index];
         ch = hex2byte(ch);
-        if (buf.nybble) {
+        if (nybble) {
             // write to low bits
             orig &= 0xF0;
             ch |= orig;
-            buf.mem[buf.index++] = ch;
-            buf.nybble = false;
+            buf.mem[index++] = ch;
+            nybble = false;
         } else {
             // write to high bits
             orig &= 0x0F;
             ch <<= 4;
             ch |= orig;
-            buf.mem[buf.index] = ch;
-            buf.nybble = true;
+            buf.mem[index] = ch;
+            nybble = true;
         }
     } else if (buf.mode == ASCII) {
         // write to whole byte
-        buf.mem[buf.index++] = ch;
+        buf.mem[index++] = ch;
+    }
+
+    if (inbounds(index)) {
+        buf.index = index;
+        buf.nybble = nybble;
     }
 }
 
