@@ -3,7 +3,7 @@
 
 #define BYTES_PER_ADDR    8   // default `bpaddr`
 #define BYTES_PER_LINE    16  // default `bpline`
-#define BYTES_PER_SEGMENT 1   // default `bpseg`
+#define BYTES_PER_SEGMENT 2   // default `bpseg`
 
 static struct {
     char *filename; 
@@ -48,7 +48,7 @@ static int getcol()
 {
     int col = buf.index%buf.bpline;
     if (buf.mode == HEX)
-        col = col*3+(buf.nybble?1:0);
+        col = (col*2)+(col/buf.bpseg)+(buf.nybble?1:0);
     return col;
 }
 
@@ -126,7 +126,8 @@ void buf_free()
 
 void buf_draw()
 {
-    view_display(buf.mem, buf.size); 
+    view_clear();
+    view_display(buf.mem, buf.size, buf.bpaddr, buf.bpline, buf.bpseg); 
     view_msg(buf.filename, buf.mode, buf.state, buf.index, buf.size);
     view_cursor(getline(), getcol(), buf.mode);
     view_update();

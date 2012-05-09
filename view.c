@@ -2,8 +2,8 @@
 #include "view.h"
 
 // Given `b` bytes, figure out how many columns wide a window is.
-#define ADDR_COLS(b)        ((b)+1)  // takes into account ':' character
-#define HEX_COLS(b)         ((b)*3)  // hex characters plus space inbetween
+#define ADDR_COLS(b)        ((b)+1)         // takes into account ':' character
+#define HEX_COLS(b, seg)    ((b*2)+(b/seg)) // hex segments plus spaces inbetween
 #define ASCII_COLS(b)       (b)      
 
 static struct {
@@ -20,8 +20,8 @@ static struct {
 void view_init(int bpaddr, int bpline, int bpseg)
 {
     view.addrwin = newwin(LINES-1, ADDR_COLS(bpaddr), 0, 0);
-    view.hexwin = newwin(LINES-1, HEX_COLS(bpline), 0, ADDR_COLS(bpaddr)+1);
-    view.asciiwin = newwin(LINES-1, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline)+1);
+    view.hexwin = newwin(LINES-1, HEX_COLS(bpline, bpseg), 0, ADDR_COLS(bpaddr)+1);
+    view.asciiwin = newwin(LINES-1, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline, bpseg)+1);
     view.msgwin = newwin(1, COLS, LINES-1, 0);
     view.addrpan = new_panel(view.addrwin);
     view.hexpan = new_panel(view.hexwin);
@@ -41,7 +41,7 @@ void view_free()
     del_panel(view.msgpan);
 }
 
-void view_display(unsigned char *buffer, size_t size)
+void view_clear()
 {
     wclear(view.addrwin);
     wclear(view.hexwin);
@@ -51,18 +51,20 @@ void view_display(unsigned char *buffer, size_t size)
     show_panel(view.hexpan);
     show_panel(view.asciipan);
     show_panel(view.msgpan);
+}
 
+void view_display(unsigned char *buffer, size_t size, int bpaddr, int bpline, int bpseg)
+{
     int i, ch;
     for (i=0; i<size; i++) {
         ch = buffer[i];
 
         // draw address
-        if (i%16 == 0)
+        if (i%bpline == 0)
             wprintw(view.addrwin, "%08x:", i);
-            //wprintw(view.addrwin, "%0" TO_STR(ADDR_BYTES) "x:", i);
 
         // draw hex
-        wprintw(view.hexwin, "%02x ", ch);
+        wprintw(view.hexwin, "%02x%s", ch, ((i+1)%bpseg == 0 ? " " : ""));
 
         // draw ascii 
         // TODO: print special characters (or color) for NL, CR, etc.

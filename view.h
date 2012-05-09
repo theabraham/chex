@@ -8,8 +8,11 @@ void view_init(int bpaddr, int bpline, int bpseg);
 // Free any memory used by the view.
 void view_free();
 
+// Clear the view's windows.
+void view_clear();
+
 // Draw the view.
-void view_display(unsigned char *buffer, size_t size);
+void view_display(unsigned char *buffer, size_t size, int bpaddr, int bpline, int bpseg);
 
 // Draw the message bar.
 void view_msg(char *filename, modes_t mode, states_t state, size_t index, size_t size);
