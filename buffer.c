@@ -7,19 +7,19 @@
 
 static struct {
     char *filename; 
-    FILE *fp;       // file-pointer
-    unsigned char *mem;      // memory block to store the file's contents
-    size_t size;    // memory block's byte size
-    size_t index;   // current position in memory block
-    bool nybble;    // targeting the higher-or-lower order bits at the current index (for HEX mode)
-    int bpaddr;     // bytes of data to show for each address
-    int bpline;     // bytes of data to show per line (ascii or hex)
-    int bpseg;      // bytes of data to show per segment (hex only)
-    modes_t mode;   // current editing mode
-    states_t state; // current state.
+    FILE *fp;           // file-pointer
+    unsigned char *mem; // memory block to store the file's contents
+    size_t size;        // memory block's byte size
+    size_t index;       // current position in memory block
+    bool nybble;        // targeting the higher-or-lower order bits at the current index (for HEX mode)
+    int bpaddr;         // bytes of data to show for each address
+    int bpline;         // bytes of data to show per line (ascii or hex)
+    int bpseg;          // bytes of data to show per segment (hex only)
+    modes_t mode;       // current editing mode
+    states_t state;     // current state.
 } buf;
 
-// Get the give file's byte size.
+// Get the given file's byte size.
 static long filesize(FILE *fp)
 {
     long size;
@@ -115,10 +115,6 @@ void buf_init(char *filename)
     while ((ch = fgetc(buf.fp)) != EOF) {
         buf.mem[i++] = ch;
     }
-
-    unsigned char t = (0x0E << 4);
-    buf.mem[0] = t;
-
 }
 
 void buf_free()
