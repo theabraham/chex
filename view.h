@@ -1,13 +1,23 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-// Initialize the buffer, some default values, and windows/panels for the view.
-void view_init();
+// Create any needed ncurses windows and panels with sizes determined by how many 
+// bytes of information each window will show.
+void view_init(int bpaddr, int bpline, int bpseg);
 
-// Free any memory used by the view and the buffer.
+// Free any memory used by the view.
 void view_free();
 
 // Draw the view.
-void view_draw(char *filename, char *buffer, size_t size, size_t index, modes_t mode, states_t, state)
+void view_display(unsigned char *buffer, size_t size);
+
+// Draw the message bar.
+void view_msg(char *filename, modes_t mode, states_t state, size_t index, size_t size);
+
+// Draw the cursor at the given `line` and `col`, within the `mode` panel.
+void view_cursor(int line, int col, modes_t mode);
+
+// Update the view.
+void view_update();
 
 #endif

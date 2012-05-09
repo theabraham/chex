@@ -18,8 +18,16 @@ enum colors {
     WHITE = 1, BLACK, RED, GREEN, BLUE, CYAN, YELLOW, MAGENTA, ORANGE
 };
 
-#include "buffer.h"
+typedef enum {
+    ASCII, HEX
+} modes_t;
+
+typedef enum {
+    ESCAPE, REPLACE
+} states_t;
+
 #include "view.h"
+#include "buffer.h"
 #include "route.h"
 
 #endif

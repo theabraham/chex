@@ -1,36 +1,32 @@
 #ifndef BUFFER_T
 #define BUFFER_T
 
-typedef enum modes_t {
-    ASCII, HEX
-};
-
-typedef enum states_t {
-    ESCAPE, REPLACE
-};
-
+// Open the named file and initialize the buffer with its contents.
 void buf_init(char *filename);
 
+// Free memory used by the buffer.
 void buf_free();
 
+// Display the buffer's current state.
 void buf_draw();
 
+// Move the buffer's index by (+/-) 1 line or column.
+void buf_move(int line, int col);
 
+// Get the buffer's editing mode.
+modes_t buf_getmode();
 
+// Set the buffer's editing mode.
+void buf_setmode(modes_t mode);
 
-void buf_setpos();
+// Gets the buffer's state.
+states_t buf_getstate();
 
-void buf_nudge(int dist);
+// Sets the buffer's state.
+void buf_setstate(states_t state);
 
-int buf_getpos();
-
-void buf_setch(char ch);
-
-int buf_getch();
-
-// save buffer to file
-// revert character at pos to original file pos
-// revert buffer to original file
-// error checking, permissions checking
+// Replace the character at the current buffer index, and move the index forward
+// one. Hex characters will be converted to their represented values. 
+void buf_repc(char ch);
 
 #endif
