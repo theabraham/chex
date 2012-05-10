@@ -19,10 +19,11 @@ static struct {
     states_t state;     // current state.
 } buf;
 
-// Get the given file's byte size.
+// Get the given file's byte size; set fp's file position indicator to the beginning.
 static long filesize(FILE *fp)
 {
     long size;
+    rewind(fp);
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);
     rewind(fp);
@@ -94,26 +95,21 @@ static void mvcol(int n)
     }
 }
 
-
 void buf_init(char *filename)
 {
     buf.filename = filename;
-    buf.fp = fopen(filename, "r+");
+    buf.fp = fopen(filename, "r+b");
     buf.size = filesize(buf.fp);
     buf.index = 0;
     buf.mem = malloc(buf.size*sizeof(char));
+    fread(buf.mem, sizeof(char), buf.size, buf.fp); // read file
+    rewind(buf.fp);
     buf.bpaddr = BYTES_PER_ADDR;
     buf.bpline = BYTES_PER_LINE;
     buf.bpseg = BYTES_PER_SEGMENT;
     buf.mode = HEX;
     buf.state = ESCAPE;
     view_init(buf.bpaddr, buf.bpline, buf.bpseg);
-
-    // read file into buffer
-    int ch, i = 0;
-    while ((ch = fgetc(buf.fp)) != EOF) {
-        buf.mem[i++] = ch;
-    }
 }
 
 void buf_free()
@@ -121,6 +117,16 @@ void buf_free()
     fclose(buf.fp);
     free(buf.mem);
     view_free();
+}
+
+void buf_write()
+{
+    fwrite(buf.mem, sizeof(char), buf.size, buf.fp);
+}
+
+void buf_revert()
+{
+    return;
 }
 
 void buf_draw()
@@ -192,3 +198,41 @@ void buf_repc(char ch)
     }
 }
 
+void buf_begline()
+{
+    buf.index = buf.index-(buf.index%buf.bpline);
+    buf.nybble = false;
+}
+
+void buf_endline()
+{
+    while (inbounds(buf.index+1) && ((buf.index+1)%buf.bpline) != 0)
+        buf.index++;
+    buf.nybble = true;
+}
+
+void buf_nextseg()
+{
+    int index = buf.index+(buf.bpseg-(buf.index%buf.bpseg));
+    if (inbounds(index)) {
+        buf.index = index;
+        buf.nybble = false;
+    }
+}
+
+void buf_prevseg()
+{
+    int index = buf.index;
+    if (index%buf.bpseg) {
+        // go to beginning of current segment
+        index -= index%buf.bpseg;
+    } else {
+        // go to beginning of next segment
+        index -= buf.bpseg;
+    }
+
+    if (inbounds(index)) {
+        buf.index = index;
+        buf.nybble = false;
+    }
+}

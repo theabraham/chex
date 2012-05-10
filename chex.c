@@ -1,3 +1,4 @@
+#include <string.h>
 #include "common.h"
 
 void initncurses()
@@ -26,17 +27,24 @@ void initncurses()
     }
 }
 
+void usage()
+{
+    printf("usage: chex [file]\n");
+}
+
 int main(int argc, char *argv[])
 {
-    initncurses();
-    buf_init(argv[1]); // TODO: command-line argument, help dialogue 
+    if (argc < 2 || (strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)) {
+        usage(); 
+    } else {
+        char *filename = argv[1];
+        initncurses();
+        buf_init(filename);
+        do { buf_draw(); } while (route(getch()));
+        buf_free();
+        endwin();
+    }
 
-    do {
-        buf_draw();
-    } while (route(getch()));
-
-    buf_free();
-    endwin();
     return 0;
 }
 

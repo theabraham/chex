@@ -7,6 +7,9 @@ void buf_init(char *filename);
 // Free memory used by the buffer.
 void buf_free();
 
+// Write the buffer's state to the original file.
+void buf_write();
+
 // Display the buffer's current state.
 void buf_draw();
 
@@ -28,5 +31,13 @@ void buf_setstate(states_t state);
 // Replace the character at the current buffer index, and move the index forward
 // one. Hex characters will be converted to their represented values. 
 void buf_repc(char ch);
+
+void buf_begline();
+
+void buf_endline();
+
+void buf_nextseg();
+
+void buf_prevseg();
 
 #endif
