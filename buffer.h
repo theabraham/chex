@@ -44,4 +44,8 @@ void buf_beg();
 
 void buf_end();
 
+void buf_nexthalf();
+
+void buf_prevhalf();
+
 #endif

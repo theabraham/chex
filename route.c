@@ -52,8 +52,8 @@ bool route(int ch)
         case 'G':       buf_end(); break;
         case '^':       buf_begline(); break;
         case '$':       buf_endline(); break;
-        case CTRL('u'): break;
-        case CTRL('d'): break;
+        case CTRL('d'): buf_nexthalf(); break;
+        case CTRL('u'): buf_prevhalf(); break;
         case 'R':       buf_setstate(REPLACE); break;
         case '?':       break;
         default:        break;                                    

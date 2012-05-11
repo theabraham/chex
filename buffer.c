@@ -281,3 +281,17 @@ void buf_end()
     setindex(buf.size - (buf.size % buf.bpline));
     buf.nybble = false;
 }
+
+void buf_nexthalf()
+{
+    int index = buf.index + ((TMP_LINES / 2) * buf.bpline);
+    if (!setindex(index))
+        buf_end();
+}
+
+void buf_prevhalf()
+{
+    int index = buf.index - ((TMP_LINES / 2) * buf.bpline);
+    if (!setindex(index))
+        buf_beg();
+}
