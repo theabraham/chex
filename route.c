@@ -48,8 +48,8 @@ bool route(int ch)
         case 'j':       buf_move(+1, 0); break;
         case 'w':       buf_nextseg(); break;
         case 'b':       buf_prevseg(); break;
-        case 'g':       break;
-        case 'G':       break;
+        case 'g':       buf_beg(); break;
+        case 'G':       buf_end(); break;
         case '^':       buf_begline(); break;
         case '$':       buf_endline(); break;
         case CTRL('u'): break;

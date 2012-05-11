@@ -12,7 +12,7 @@ void view_free();
 void view_clear();
 
 // Draw the view.
-void view_display(unsigned char *buffer, size_t size, int bpaddr, int bpline, int bpseg);
+void view_display(unsigned char *buffer, size_t size, size_t top, size_t bottom, int bpaddr, int bpline, int bpseg);
 
 // Draw the message bar.
 void view_msg(char *filename, modes_t mode, states_t state, size_t index, size_t size);

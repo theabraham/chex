@@ -5,6 +5,8 @@
 #define BYTES_PER_LINE    16  // default `bpline`
 #define BYTES_PER_SEGMENT 2   // default `bpseg`
 
+#define TMP_LINES 8
+
 static struct {
     char *filename; 
     FILE *fp;           // file-pointer
@@ -12,11 +14,12 @@ static struct {
     size_t size;        // memory block's byte size
     size_t index;       // current position in memory block
     bool nybble;        // targeting the higher-or-lower order bits at the current index (for HEX mode)
+    int edge;           // what line the buffer's top edge is on (bottom edge is implicit)
     int bpaddr;         // bytes of data to show for each address
     int bpline;         // bytes of data to show per line (ascii or hex)
     int bpseg;          // bytes of data to show per segment (hex only)
     modes_t mode;       // current editing mode
-    states_t state;     // current state.
+    states_t state;     // current state
 } buf;
 
 // Get the given file's byte size; set fp's file position indicator to the beginning.
@@ -36,11 +39,48 @@ static char hex2byte(char ch) {
     return strtol(hexstr, NULL, 16);
 }
 
+// Move the edge up or down by `n` lines while making sure it's inbounds.
+static void mvedge(int n)
+{
+    int edge = buf.edge + n;
+    if (edge >= 0 && edge < (buf.size/buf.bpline))
+        buf.edge = edge;
+}
+
+// Return the index representation of where the edge's top start.
+static size_t gettop()
+{
+    return buf.edge*buf.bpline;
+}
+
+// Return the index representation of where the edge's bottom ends.
+static size_t getbottom()
+{
+    size_t bottom = ((buf.edge+TMP_LINES)*buf.bpline)+(buf.bpline-1);
+    if (bottom >= buf.size)
+        return buf.size-1;
+    return bottom;
+}
+
+// Move the index forward or backward by `n` positions. Make sure the index is
+// in bounds and within view of the edge's top and bottom bounds.
+static bool setindex(int index)
+{
+    if (index < 0 || index >= buf.size) {
+        return false;
+    } else {
+        while (index < gettop()) mvedge(-1);
+        while (index > getbottom()) mvedge(+1);
+        buf.index = index;
+        return true;
+    }
+}
+
 // Get what line the view's cursor should be on relative to the buffer's current
 // index and bytes-per-line being shown.
 static int getline()
 {
-    return buf.index/buf.bpline;
+    return (buf.index / buf.bpline) - buf.edge;
 }
 
 // Get what column the view's cursor should be on relative to the buffer's current
@@ -53,17 +93,10 @@ static int getcol()
     return col;
 }
 
-// Checks whether the given `index` is within the buffer's bounds.
-static bool inbounds(int index)
-{
-    return (index >= 0 && index < buf.size);
-}
-
 static void mvline(int n)
 {
     int index = buf.index+(n*buf.bpline);
-    if (inbounds(index))
-        buf.index = index;
+    setindex(index);
 }
 
 static void mvcol(int n)
@@ -89,8 +122,7 @@ static void mvcol(int n)
         index += n;
     }
 
-    if (inbounds(index)) {
-        buf.index = index;
+    if (setindex(index)) {
         buf.nybble = nybble;
     }
 }
@@ -101,6 +133,8 @@ void buf_init(char *filename)
     buf.fp = fopen(filename, "r+b");
     buf.size = filesize(buf.fp);
     buf.index = 0;
+    buf.nybble = false;
+    buf.edge = 0;
     buf.mem = malloc(buf.size*sizeof(char));
     fread(buf.mem, sizeof(char), buf.size, buf.fp); // read file
     rewind(buf.fp);
@@ -132,7 +166,7 @@ void buf_revert()
 void buf_draw()
 {
     view_clear();
-    view_display(buf.mem, buf.size, buf.bpaddr, buf.bpline, buf.bpseg); 
+    view_display(buf.mem, buf.size, gettop(), getbottom(), buf.bpaddr, buf.bpline, buf.bpseg); 
     view_msg(buf.filename, buf.mode, buf.state, buf.index, buf.size);
     view_cursor(getline(), getcol(), buf.mode);
     view_update();
@@ -192,30 +226,30 @@ void buf_repc(char ch)
         buf.mem[index++] = ch;
     }
 
-    if (inbounds(index)) {
-        buf.index = index;
+    if (setindex(index)) {
         buf.nybble = nybble;
     }
 }
 
 void buf_begline()
 {
-    buf.index = buf.index-(buf.index%buf.bpline);
+    setindex(buf.index-(buf.index%buf.bpline));
     buf.nybble = false;
 }
 
 void buf_endline()
 {
-    while (inbounds(buf.index+1) && ((buf.index+1)%buf.bpline) != 0)
-        buf.index++;
-    buf.nybble = true;
+    int index = (buf.index - (buf.index % buf.bpline)) + (buf.bpline - 1);
+    if (index >= buf.size)
+        index = buf.size - 1;
+    if (setindex(index))
+        buf.nybble = true;
 }
 
 void buf_nextseg()
 {
     int index = buf.index+(buf.bpseg-(buf.index%buf.bpseg));
-    if (inbounds(index)) {
-        buf.index = index;
+    if (setindex(index)) {
         buf.nybble = false;
     }
 }
@@ -231,8 +265,19 @@ void buf_prevseg()
         index -= buf.bpseg;
     }
 
-    if (inbounds(index)) {
-        buf.index = index;
+    if (setindex(index)) {
         buf.nybble = false;
     }
+}
+
+void buf_beg()
+{
+    setindex(0);
+    buf.nybble = false;
+}
+
+void buf_end()
+{
+    setindex(buf.size - (buf.size % buf.bpline));
+    buf.nybble = false;
 }

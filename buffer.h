@@ -40,4 +40,8 @@ void buf_nextseg();
 
 void buf_prevseg();
 
+void buf_beg();
+
+void buf_end();
+
 #endif

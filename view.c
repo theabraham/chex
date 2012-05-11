@@ -53,26 +53,18 @@ void view_clear()
     show_panel(view.msgpan);
 }
 
-void view_display(unsigned char *buffer, size_t size, int bpaddr, int bpline, int bpseg)
+void view_display(unsigned char *buffer, size_t size, size_t top, size_t bottom, int bpaddr, int bpline, int bpseg)
 {
-    int i, ch;
-    for (i=0; i<size; i++) {
-        ch = buffer[i];
-
+    int index, ch;
+    for (index=top; index<=bottom; index++) {
+        ch = buffer[index];
         // draw address
-        if (i%bpline == 0)
-            wprintw(view.addrwin, "%08x:", i);
-
+        if (index % bpline == 0)
+            wprintw(view.addrwin, "%08x:", index);
         // draw hex
-        wprintw(view.hexwin, "%02x%s", ch, ((i+1)%bpseg == 0 ? " " : ""));
-
-        // draw ascii 
-        // TODO: print special characters (or color) for NL, CR, etc.
-        if (ch >= ' ' && ch < 127) {
-            waddch(view.asciiwin, ch);
-        } else {
-            waddch(view.asciiwin, '.');
-        }
+        wprintw(view.hexwin, "%02x%s", ch, ((index + 1) % bpseg == 0 ? " " : ""));
+        // draw ascii (TODO: print special characters (or color) for NL, CR, etc.)
+        waddch(view.asciiwin, (ch >= ' ' && ch < 127) ? ch : '.');
     }
 }
 
@@ -96,4 +88,3 @@ void view_update()
     update_panels();
     doupdate();
 }
-
