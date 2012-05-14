@@ -60,7 +60,7 @@ void view_display(unsigned char *buffer, size_t size, size_t top, size_t bottom,
         ch = buffer[index];
         // draw address
         if (index % bpline == 0)
-            wprintw(view.addrwin, "%08x:", index);
+            wprintw(view.addrwin, "%8x:", index);
         // draw hex
         wprintw(view.hexwin, "%02x%s", ch, ((index + 1) % bpseg == 0 ? " " : ""));
         // draw ascii (TODO: print special characters (or color) for NL, CR, etc.)

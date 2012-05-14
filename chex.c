@@ -1,7 +1,6 @@
-#include <string.h>
 #include "common.h"
 
-void initncurses()
+void ncurses_init()
 {
     initscr();
     noecho();
@@ -36,13 +35,24 @@ int main(int argc, char *argv[])
 {
     if (argc < 2 || (strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)) {
         usage(); 
-    } else {
-        char *filename = argv[1];
-        initncurses();
+        return 0;
+    }
+
+    char *filename = argv[1];
+    int status = setjmp(error_pos);
+    if (status == 0) {
+        ncurses_init();
         buf_init(filename);
         do { buf_draw(); } while (route(getch()));
-        buf_free();
-        endwin();
+    }
+
+    buf_free();
+    endwin();
+
+    if (status > 0) {
+        // critical error somewhere in the program
+        perror(error_line);
+        exit(errno);
     }
 
     return 0;
