@@ -1,56 +1,37 @@
 #ifndef BUFFER_T
 #define BUFFER_T
 
-// Open the named file and initialize the buffer with its contents. Returns false
-// if there was an error while handling files.
+struct {
+    char *filename; 
+    FILE *fp;           /* File-pointer returned after opening FILENAME. */ 
+    unsigned char *mem; /* Memory block to store FP's contents. */
+    size_t size;        /* Byte size of MEM. */
+    size_t index;       /* Current position in MEM. */
+    bool nybble;        /* Editing the higher or lower order bits at INDEX. */
+    modes_t mode;       /* Current mode equal to either ASCII or HEX. */
+    states_t state;     /* Current state equal to either ESCAPE or REPLACE. */
+} buf;
+
+/* Initialize the buffer with information from FILENAME. */
 void buf_init(char *filename);
 
-// Free memory used by the buffer.
+/* Close the open file and free the buffer's memory. */
 void buf_free();
 
-// Write the buffer's state to the original file.
+/* Overwrite the original file on disk with the buffer's current memory. */
 void buf_write();
 
+/* Revert the buffer's current memory to reflect the original file's contents.  */
 void buf_revert();
 
-// Display the buffer's current state.
-void buf_draw();
+/* Set the buffer's INDEX and NYBBLE. If the given INDEX is out of bounds, set it
+   to either the beginning or the end of the buffer. */
+void buf_setindex(int index, bool nybble);
 
-// Move the buffer's index by (+/-) 1 line or column.
-void buf_move(int line, int col);
+/* Set the value at the buffer's current INDEX and NYBBLE to CH. */
+void buf_putchar(char ch);
 
-// Get the buffer's editing mode.
-modes_t buf_getmode();
-
-// Set the buffer's editing mode.
-void buf_setmode(modes_t mode);
-
-// Gets the buffer's state.
-states_t buf_getstate();
-
-// Sets the buffer's state.
-void buf_setstate(states_t state);
-
-// Replace the character at the current buffer index, and move the index forward
-// one. Hex characters will be converted to their represented values. 
-void buf_repc(char ch);
-
-void buf_delc();
-
-void buf_begline();
-
-void buf_endline();
-
-void buf_nextseg();
-
-void buf_prevseg();
-
-void buf_beg();
-
-void buf_end();
-
-void buf_nexthalf();
-
-void buf_prevhalf();
+/* ... */
+void buf_revertchar();
 
 #endif

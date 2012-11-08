@@ -1,8 +1,40 @@
 #include <signal.h>
 #include "common.h"
-#include "route.h"
 
-#define CTRL(ch) ((ch) & 0x1F)
+/* Value of KEY when CTRL key is being help down. */
+#define CTRL(key) ((key) & 0x1F)
+
+/* ... */
+
+static void move_line(int n)
+{
+    int index = buf.index + (n * view.bpline);
+    buf_setindex(index, buf.nybble);
+}
+
+/* ... */
+
+static void move_col(int n)
+{
+    if (buf.mode == HEX) {
+        /* In HEX mode, 2-columns represent one INDEX value, and odd columns
+           represent the lower nybble of the current byte. */
+        int index = buf.index + (n / 2);
+        if (n % 2 != 0) {
+            if (buf.nybble) {
+                buf_setindex(index + (n > 0 ? 1 : 0), false);
+            } else {
+                buf_setindex(index - (n > 0 ? 0 : 1), true);
+            }
+        } else {
+            buf_setindex(index, false);
+        }
+    } else { /* ASCII mode is one-to-one in regards of INDEX to COLUMNS. */
+        buf_setindex(buf.index + n, false);
+    }
+}
+
+/* ... */
 
 static void suspend()
 {
@@ -21,82 +53,92 @@ static void toggle_mode()
 
 static void set_state(states_t state)
 {
-    buf.state = state
+    buf.state = state;
 }
 
-static void move_cursor(int line, int col)
-{
-    buf_mvline(line);
-    buf_mvcol(col);
-}
+/* ... */
 
 static void replace_char(char ch)
 {
     bool is_backspace = (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 127);
-    if (is_backspace) {
-        int orig;
-        fseek(buf.fp, (buf.index == 0 ? 0 : buf.index - 1), SEEK_SET);
-        orig = fgetc(buf.fp);
-        mvcol(-1);
-        setchar(orig);
+    if (is_backspace) { 
+        move_col(-1);
+        buf_revertchar();
      } else {
-        setchar(ch);
-        mvcol(+1);
+        buf_putchar(ch);
+        move_col(+1);
     }
 }
+
+/* ... */
 
 static void goto_line_beg()
 {
-    setindex(buf.index - (buf.index % buf.bpline), false);
+    int index = buf.index - (buf.index % view.bpline);
+    buf_setindex(index, false);
 }
+
+/* ... */
 
 static void goto_line_end()
 {
-    int index = (buf.index - (buf.index % buf.bpline)) + (buf.bpline - 1);
+    int index = (buf.index - (buf.index % view.bpline)) + (view.bpline - 1);
     if (index >= buf.size)
-        setindex(buf.size - 1, true);
+        buf_setindex(buf.size - 1, true);
     else
-        setindex(index, true);
+        buf_setindex(index, true);
 }
+
+/* ... */
 
 static void goto_grp_next()
 {
-    setindex(buf.index + (buf.bpseg - (buf.index % buf.bpseg)), false);
+    int index = buf.index + (view.bpgrp - (buf.index % view.bpgrp));
+    buf_setindex(index, false);
 }
+
+/* ... */
 
 static void goto_grp_prev()
 {
-    if (buf.index % buf.bpseg) {
+    if (buf.index % view.bpgrp) {
         // go to beginning of current segment
-        setindex(buf.index - (buf.index % buf.bpseg), false);
+        buf_setindex(buf.index - (buf.index % view.bpgrp), false);
     } else {
         // go to beginning of previous segment
-        setindex(buf.index - buf.bpseg, false);
+        buf_setindex(buf.index - view.bpgrp, false);
     }
 }
 
+/* ... */
+
 static void goto_buffer_beg()
 {
-    setindex(0, false);
+    buf_setindex(0, false);
 }
+
+/* ... */
 
 static void goto_buffer_end()
 {
-    setindex(buf.size - (buf.size % buf.bpline), false);
+    int index = buf.size - (buf.size % view.bpline);
+    buf_setindex(index, false);
 }
+
+/* ... */
 
 static void goto_half_next()
 {
-    bool inbounds = setindex(buf.index + ((TMP_LINES / 2) * buf.bpline), buf.nybble);
-    if (!inbounds)
-        buf_end();
+    int index = buf.index + ((LINES / 2) * view.bpline);
+    buf_setindex(index, buf.nybble);
 }
+
+/* ... */
 
 static void goto_half_prev()
 {
-    int inbounds = setindex(buf.index - ((TMP_LINES / 2) * buf.bpline), buf.nybble);
-    if (!inbounds)
-        buf_beg();
+    int index = buf.index - ((LINES / 2) * view.bpline);
+    buf_setindex(index, buf.nybble);
 }
 
 bool route(int ch)
@@ -110,10 +152,10 @@ bool route(int ch)
         case CTRL('w'):   buf_write(); break;
         case CTRL('r'):   buf_revert(); break;
         case CTRL('['):   set_state(ESCAPE); break;
-        case KEY_LEFT:    move_cursor(0, -1); break;         
-        case KEY_UP:      move_cursor(-1, 0); break;        
-        case KEY_RIGHT:   move_cursor(0, +1); break;         
-        case KEY_DOWN:    move_cursor(+1, 0); break;        
+        case KEY_LEFT:    move_col(-1); break;
+        case KEY_UP:      move_line(-1); break;
+        case KEY_RIGHT:   move_col(+1); break;
+        case KEY_DOWN:    move_line(+1); break;
         case '\t':        toggle_mode(); break;    
         default:
             if (buf.state == REPLACE) {
@@ -126,10 +168,10 @@ bool route(int ch)
     /* Keys available in only ESCAPE mode. */
     switch (ch) {
         case 'R': set_state(REPLACE); break;
-        case 'h': move_cursor(0, -1); break; 
-        case 'k': move_cursor(-1, 0); break;
-        case 'l': move_cursor(0, +1); break; 
-        case 'j': move_cursor(+1, 0); break;
+        case 'h': move_col(-1); break; 
+        case 'k': move_line(-1); break;
+        case 'l': move_col(+1); break; 
+        case 'j': move_line(+1); break;
         case 'w': goto_grp_next(); break;
         case 'b': goto_grp_prev(); break;
         case 'g': goto_buffer_beg(); break;
@@ -138,8 +180,6 @@ bool route(int ch)
         case '$': goto_line_end(); break;
         case 'd': goto_half_next(); break;
         case 'u': goto_half_prev(); break;
-        //case 'e': buf_mvedge(-1); break;
-        //case 'y': buf_mvedge(+1); break;
         case '?': break;
         default:  break;                                    
     }

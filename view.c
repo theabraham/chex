@@ -1,85 +1,113 @@
 #include "common.h"
-#include "view.h"
 
 // Given `b` bytes, figure out how many columns wide a window is.
 #define ADDR_COLS(b)        ((b)+1)         // takes into account ':' character
 #define HEX_COLS(b, seg)    ((b*2)+(b/seg)) // hex segments plus spaces inbetween
 #define ASCII_COLS(b)       (b)      
 
-static struct {
-    WINDOW *addrwin;
-    WINDOW *hexwin;     
-    WINDOW *asciiwin;  
-    WINDOW *msgwin;   
-    PANEL *addrpan;
-    PANEL *hexpan;   
-    PANEL *asciipan;
-    PANEL *msgpan; 
-} view;                 
+#define LINES_IN_BUFFER (buf.size / view.bpline)
 
-void view_init(int bpaddr, int bpline, int bpseg)
+/* The INDEX's current column within a line. */
+#define INDEX_COL (buf.index % view.bpline)
+
+/* Cursor's LINE and COL position relative to the buffer's INDEX. In HEX mode,
+   the COL accounts for spaces inbetween hex groups and the current NYBBLE. */
+#define CURSOR_LINE ((buf.index / view.bpline) - view.edge)
+#define CURSOR_COL (buf.mode == HEX ? ((INDEX_COL * 2) + (INDEX_COL / view.bpgrp) + buf.nybble) \
+                                    : (buf.index % view.bpline))
+
+/* Moves the EDGE by LINES. If the new EDGE would be out of bounds, set it to
+   either the first or last line in the buffer. */
+
+static void edge_move(int lines)
 {
-    view.addrwin = newwin(LINES-1, ADDR_COLS(bpaddr), 0, 0);
-    view.hexwin = newwin(LINES-1, HEX_COLS(bpline, bpseg), 0, ADDR_COLS(bpaddr)+1);
-    view.asciiwin = newwin(LINES-1, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline, bpseg)+1);
-    view.msgwin = newwin(1, COLS, LINES-1, 0);
-    view.addrpan = new_panel(view.addrwin);
-    view.hexpan = new_panel(view.hexwin);
-    view.asciipan = new_panel(view.asciiwin);
-    view.msgpan = new_panel(view.msgwin);
+    int edge = view.edge + lines;
+    if (edge < 0) {
+        view.edge = 0;
+    } else if (edge > LINES_IN_BUFFER) {
+        view.edge = LINES_IN_BUFFER;
+    } else {
+        view.edge = edge;
+    }
+}
+
+/* Return the INDEX that marks the beginning of the currently visible buffer. */
+
+static size_t edge_beg()
+{
+    size_t beg = view.edge * view.bpline;
+    return beg;
+}
+
+/* Return the INDEX that marks the end of the currently visible buffer. */
+
+static size_t edge_end()
+{
+    size_t end = ((view.edge + LINES-1) * view.bpline) + (view.bpline - 1);
+    if (end >= buf.size)
+        end = buf.size - 1;
+    return end;
+}
+
+static void edge_center()
+{
+    size_t begin = edge_beg();
+    size_t end = edge_end();
+    while (begin > buf.index) edge_move(-1);
+    if (end < buf.index) edge_move(+1);
+}
+
+void view_init(int bpaddr, int bpline, int bpgrp)
+{
+    view.edge = 0;
+    view.bpaddr = bpaddr;
+    view.bpline = bpline;
+    view.bpgrp = bpgrp;
+    view._addrwin = newwin(LINES-1, ADDR_COLS(bpaddr), 0, 0);
+    view._hexwin = newwin(LINES-1, HEX_COLS(bpline, bpgrp), 0, ADDR_COLS(bpaddr)+1);
+    view._asciiwin = newwin(LINES-1, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline, bpgrp)+1);
+    view._msgwin = newwin(1, COLS, LINES-1, 0);
+    view._addrpan = new_panel(view._addrwin);
+    view._hexpan = new_panel(view._hexwin);
+    view._asciipan = new_panel(view._asciiwin);
+    view._msgpan = new_panel(view._msgwin);
 }
 
 void view_free()
 {
-    delwin(view.addrwin);
-    delwin(view.hexwin);
-    delwin(view.asciiwin);
-    delwin(view.msgwin);
-    del_panel(view.addrpan);
-    del_panel(view.hexpan);
-    del_panel(view.asciipan);
-    del_panel(view.msgpan);
+    delwin(view._addrwin);
+    delwin(view._hexwin);
+    delwin(view._asciiwin);
+    delwin(view._msgwin);
+    del_panel(view._addrpan);
+    del_panel(view._hexpan);
+    del_panel(view._asciipan);
+    del_panel(view._msgpan);
 }
 
 void view_clear()
 {
-    wclear(view.addrwin);
-    wclear(view.hexwin);
-    wclear(view.asciiwin);
-    wclear(view.msgwin);
-    show_panel(view.addrpan);
-    show_panel(view.hexpan);
-    show_panel(view.asciipan);
-    show_panel(view.msgpan);
+    wclear(view._addrwin);
+    wclear(view._hexwin);
+    wclear(view._asciiwin);
+    wclear(view._msgwin);
+    show_panel(view._addrpan);
+    show_panel(view._hexpan);
+    show_panel(view._asciipan);
+    show_panel(view._msgpan);
 }
 
-void view_display(unsigned char *buffer, size_t size, size_t top, size_t bottom, int bpaddr, int bpline, int bpseg)
+void view_status()
 {
-    int index, ch;
-    for (index=top; index<=bottom; index++) {
-        ch = buffer[index];
-        // draw address
-        if (index % bpline == 0)
-            wprintw(view.addrwin, "%8x:", index);
-        // draw hex
-        wprintw(view.hexwin, "%02x%s", ch, ((index + 1) % bpseg == 0 ? " " : ""));
-        // draw ascii (TODO: print special characters (or color) for NL, CR, etc.)
-        waddch(view.asciiwin, (ch >= ' ' && ch < 127) ? ch : '.');
-    }
+    char *mode_str = (buf.mode == HEX ? "HEX" : "ASCII");
+    char *state_str = (buf.state == ESCAPE ? "" : "REPLACE");
+    wprintw(view._msgwin, "\"%s\" %-5s %-7s [%i/%i]", buf.filename, mode_str, state_str, buf.index, buf.size);
 }
 
-void view_msg(char *filename, modes_t mode, states_t state, size_t index, size_t size)
+void view_cursor()
 {
-    // TODO: will print errors and status like vim
-    char *mode_str = (mode == HEX ? "HEX" : "ASCII");
-    char *state_str = (state == ESCAPE ? "" : "REPLACE");
-    wprintw(view.msgwin, "\"%s\" %-5s %-7s [%i/%i]", filename, mode_str, state_str, index, size);
-}
-
-void view_cursor(int line, int col, modes_t mode)
-{
-    PANEL *curpan = (mode == HEX ? view.hexpan : view.asciipan);
-    wmove(panel_window(curpan), line, col);
+    PANEL *curpan = (buf.mode == HEX ? view._hexpan : view._asciipan);
+    wmove(panel_window(curpan), CURSOR_LINE, CURSOR_COL);
     top_panel(curpan);
 }
 
@@ -88,3 +116,56 @@ void view_update()
     update_panels();
     doupdate();
 }
+
+void view_display()
+{
+    view_clear();
+
+    int index, ch;
+    bool use_space, is_ascii, on_current_line, has_changed;
+    edge_center();
+    for (index = edge_beg(); index <= edge_end(); index++) {
+        ch = buf.mem[index];
+        use_space = (((index + 1) % view.bpgrp) == 0);
+        is_ascii = (ch >= ' ' && ch < 127);
+        on_current_line = (((index / view.bpline) - view.edge) == CURSOR_LINE);
+        fseek(buf.fp, index, SEEK_SET);
+        has_changed = (ch != fgetc(buf.fp));
+
+        if (on_current_line) {
+            wattron(view._addrwin, A_BOLD);
+            wattron(view._hexwin, A_BOLD);
+            wattron(view._asciiwin, A_BOLD);
+        }
+
+        /* Draw address panel. */
+        if (index % view.bpline == 0) {
+            wprintw(view._addrwin, "%8x:", index);
+        }
+
+        /* Draw hex panel. */
+        if (buf.mode == HEX) wattron(view._hexwin, COLOR_PAIR(WHITE));
+        if (has_changed) wattron(view._hexwin, COLOR_PAIR(YELLOW));
+        wprintw(view._hexwin, "%02x%s", ch, (use_space ? " " : ""));
+        if (has_changed) wattroff(view._hexwin, COLOR_PAIR(YELLOW));
+        if (buf.mode == HEX) wattroff(view._hexwin, COLOR_PAIR(WHITE));
+
+        /* Draw ascii panel. */
+        if (buf.mode == ASCII) wattron(view._asciiwin, COLOR_PAIR(WHITE));
+        if (has_changed) wattron(view._asciiwin, COLOR_PAIR(YELLOW));
+        waddch(view._asciiwin, (is_ascii ? ch : '.'));
+        if (has_changed) wattroff(view._asciiwin, COLOR_PAIR(YELLOW));
+        if (buf.mode == ASCII) wattroff(view._asciiwin, COLOR_PAIR(WHITE));
+
+        if (on_current_line) {
+            wattroff(view._addrwin, A_BOLD);
+            wattroff(view._hexwin, A_BOLD);
+            wattroff(view._asciiwin, A_BOLD);
+        }
+    }
+
+    view_status();
+    view_cursor();
+    view_update();
+}
+
