@@ -2,7 +2,6 @@
 
 /* Get FP's size in bytes; keeps FP's file position indicator at the beginning.
    Return -1 on error. */
-
 static long filesize(FILE *fp)
 {
     long size;
@@ -15,7 +14,6 @@ static long filesize(FILE *fp)
 }
 
 /* If CH is a hex character, return its bit value; otherwise, return -1. */
-
 static char hex2bit(char ch) {
     char hexstr[2] = { ch, '\0' };
     if (!ishexnumber(ch))
@@ -102,8 +100,14 @@ void buf_putchar(char ch)
 
 void buf_revertchar()
 {
-    fseek(buf.fp, (buf.index == 0 ? 0 : buf.index), SEEK_SET);
-    buf_putchar(fgetc(buf.fp));
-    rewind(buf.fp);
+    fseek(buf.fp, buf.index, SEEK_SET);
+    char orig = fgetc(buf.fp);
+    if (buf.mode == HEX) {
+        char hex[3];
+        snprintf(hex, sizeof(hex), "%02x", orig);
+        buf_putchar(buf.nybble ? hex[1] : hex[0]);
+    } else if (buf.mode == ASCII) {
+        buf_putchar(orig);
+    }
 }
 

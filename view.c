@@ -4,6 +4,7 @@
 #define ADDR_COLS(b)        ((b)+1)         // takes into account ':' character
 #define HEX_COLS(b, seg)    ((b*2)+(b/seg)) // hex segments plus spaces inbetween
 #define ASCII_COLS(b)       (b)      
+#define EDITOR_LINES        (LINES - 1)
 
 #define LINES_IN_BUFFER (buf.size / view.bpline)
 
@@ -18,7 +19,6 @@
 
 /* Moves the EDGE by LINES. If the new EDGE would be out of bounds, set it to
    either the first or last line in the buffer. */
-
 static void edge_move(int lines)
 {
     int edge = view.edge + lines;
@@ -32,29 +32,25 @@ static void edge_move(int lines)
 }
 
 /* Return the INDEX that marks the beginning of the currently visible buffer. */
-
-static size_t edge_beg()
+static int edge_beg()
 {
-    size_t beg = view.edge * view.bpline;
-    return beg;
+    return view.edge * view.bpline;
 }
 
-/* Return the INDEX that marks the end of the currently visible buffer. */
-
-static size_t edge_end()
+/* Returns the INDEX that marks the end of the currently visible buffer. */
+static int edge_end()
 {
-    size_t end = ((view.edge + LINES-1) * view.bpline) + (view.bpline - 1);
+    int end = edge_beg() + (view.bpline * EDITOR_LINES) - 1;
     if (end >= buf.size)
         end = buf.size - 1;
     return end;
 }
 
-static void edge_center()
+/* Adjust the EDGE so the cursor stays within its boundaries. */
+static void edge_adjust()
 {
-    size_t begin = edge_beg();
-    size_t end = edge_end();
-    while (begin > buf.index) edge_move(-1);
-    if (end < buf.index) edge_move(+1);
+    while (buf.index < edge_beg()) edge_move(-1);
+    while (buf.index > edge_end()) edge_move(+1);
 }
 
 void view_init(int bpaddr, int bpline, int bpgrp)
@@ -123,7 +119,7 @@ void view_display()
 
     int index, ch;
     bool use_space, is_ascii, on_current_line, has_changed;
-    edge_center();
+    edge_adjust();
     for (index = edge_beg(); index <= edge_end(); index++) {
         ch = buf.mem[index];
         use_space = (((index + 1) % view.bpgrp) == 0);

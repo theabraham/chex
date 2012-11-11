@@ -14,6 +14,9 @@
 #define true  1
 #define false 0
 
+/* Display a formatted string to the far right of the screen; useful for debugging. */
+#define debug(y, fmt, ...) mvwprintw(stdscr, y, 100, fmt, ##__VA_ARGS__)
+
 // way to expand macros to strings, ghetto
 #define STR_EXPAND(x) #x
 #define TO_STR(x) STR_EXPAND(x)

@@ -5,12 +5,13 @@
 #define BYTES_PER_LINE 16
 #define BYTES_PER_GROUP 2
 
-void ncurses_init()
+void ncurses_init(bool use_colors)
 {
     initscr();
     noecho();
     raw();
     keypad(stdscr, true);
+    if (!use_colors) return;
 
     if (has_colors()) {
         start_color();
@@ -31,22 +32,32 @@ void ncurses_init()
     }
 }
 
-void usage()
+void usage(char *argv[])
 {
-    printf("usage: chex [file]\n");
+    printf("usage: %s [--no-colors] [file]\n", argv[0]);
+    printf("controls:\n");
+    printf("    h j k l     move up, down, left, right\n");
+    printf("    ^u ^d       page up, page down\n");
+    printf("    g G         first, last line\n");
+    printf("    ^ $         start, end of line\n");
+    printf("    R           replace mode\n");
+    printf("    escape      normal mode\n");
+    printf("    ^w          write\n");
+    printf("    ^q          quit\n");
+    printf("    ?           help\n");
 }
 
 int main(int argc, char *argv[])
 {
     if (argc < 2 || (strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)) {
-        usage(); 
+        usage(argv); 
         return 0;
     }
 
     char *filename = argv[1];
     int status = setjmp(error_pos);
     if (status == 0) {
-        ncurses_init();
+        ncurses_init(true);
         buf_init(filename);
         view_init(BYTES_PER_ADDR, BYTES_PER_LINE, BYTES_PER_GROUP);
         do { view_display(); } while (route(getch()));

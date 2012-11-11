@@ -28,10 +28,12 @@ void buf_revert();
    to either the beginning or the end of the buffer. */
 void buf_setindex(int index, bool nybble);
 
-/* Set the value at the buffer's current INDEX and NYBBLE to CH. */
+/* Set the value at the buffer's current INDEX and NYBBLE to CH which can either
+   be a HEX or ASCII character. */
 void buf_putchar(char ch);
 
-/* ... */
+/* Restore the HEX or ASCII character at the current INDEX and NYBBLE to the original
+   file's value. */
 void buf_revertchar();
 
 #endif
