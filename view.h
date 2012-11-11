@@ -6,6 +6,7 @@ struct {
     int bpaddr;         /* Bytes to show per line in the address panel. */
     int bpline;         /* Bytes to show per line in the hex/ascii panels. */
     int bpgrp;          /* Bytes to show per space delimited hex group. */
+    bool help;          /* Whether or not the help menu is being displayed. */
     WINDOW *_addrwin;
     WINDOW *_hexwin;     
     WINDOW *_asciiwin;  

@@ -34,7 +34,7 @@ void ncurses_init(bool use_colors)
 
 void usage(char *argv[])
 {
-    printf("usage: %s [--no-colors] [file]\n", argv[0]);
+    printf("usage: %s [file]\n", argv[0]);
     printf("controls:\n");
     printf("    h j k l     move up, down, left, right\n");
     printf("    ^u ^d       page up, page down\n");

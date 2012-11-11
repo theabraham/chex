@@ -83,6 +83,7 @@ void view_free()
 
 void view_clear()
 {
+    wclear(stdscr);
     wclear(view._addrwin);
     wclear(view._hexwin);
     wclear(view._asciiwin);
@@ -107,6 +108,25 @@ void view_cursor()
     top_panel(curpan);
 }
 
+void view_help()
+{
+    box(stdscr, false, false);
+    wattrset(stdscr, A_BOLD);
+    mvwprintw(stdscr, (LINES/2)-4, (COLS/2)-3, "CONTROLS");
+    wattrset(stdscr, A_NORMAL);
+    mvwprintw(stdscr, (LINES/2)-3, (COLS/2)-6, "right - right/h");
+    mvwprintw(stdscr, (LINES/2)-2, (COLS/2)-5, "left - left/l");
+    mvwprintw(stdscr, (LINES/2)-1, (COLS/2)-7, "rotate - up/k");
+    mvwprintw(stdscr, (LINES/2)+0, (COLS/2)-5, "down - down/j");
+    mvwprintw(stdscr, (LINES/2)+1, (COLS/2)-5, "drop - space");
+    mvwprintw(stdscr, (LINES/2)+2, (COLS/2)-6, "pause - p");
+    mvwprintw(stdscr, (LINES/2)+3, (COLS/2)-9, "controls - ?");
+    mvwprintw(stdscr, (LINES/2)+4, (COLS/2)-5, "quit - q");
+    hide_panel(view._addrpan);
+    hide_panel(view._hexpan);
+    hide_panel(view._asciipan);
+}
+
 void view_update()
 {
     update_panels();
@@ -116,6 +136,11 @@ void view_update()
 void view_display()
 {
     view_clear();
+
+    if (view.help) {
+        view_help();
+        return;
+    }
 
     int index, ch;
     bool use_space, is_ascii, on_current_line, has_changed;

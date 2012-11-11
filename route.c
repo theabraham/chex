@@ -180,7 +180,7 @@ bool route(int ch)
         case '$': goto_line_end(); break;
         case 'd': goto_half_next(); break;
         case 'u': goto_half_prev(); break;
-        case '?': break;
+        case '?': view.help = !view.help; break;
         default:  break;                                    
     }
 
