@@ -1,7 +1,7 @@
 #include "common.h"
 
-/* Get FP's size in bytes; keeps FP's file position indicator at the beginning.
-   Return -1 on error. */
+/* Get FP's size in bytes; keeps FP's file position indicator (fpi) at the
+   beginning. Return -1 on error. */
 static long filesize(FILE *fp)
 {
     long size;
@@ -29,7 +29,7 @@ void buf_init(char *filename)
     CHECK(buf.fp != NULL);
     buf.size = filesize(buf.fp);
     CHECK(buf.size != -1);
-    buf.mem = malloc(buf.size*sizeof(char));
+    buf.mem = malloc(buf.size * sizeof(char));
     CHECK(buf.mem != NULL);
     fread(buf.mem, sizeof(char), buf.size, buf.fp);
     CHECK(ferror(buf.fp) == 0);

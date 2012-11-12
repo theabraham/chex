@@ -17,18 +17,18 @@
 /* Display a formatted string to the far right of the screen; useful for debugging. */
 #define debug(y, fmt, ...) mvwprintw(stdscr, y, 100, fmt, ##__VA_ARGS__)
 
-// way to expand macros to strings, ghetto
-#define STR_EXPAND(x) #x
-#define TO_STR(x) STR_EXPAND(x)
-
-/* If state doesn't evaluate to true, jump out of the main-loop, print the error and 
-   exit the program. */
+/* If STATE doesn't evaluate to true, jump out of the main function's 
+   event-loop, print the error, and exit the program. */
 #define CHECK(state) do { \
         if (!(state)) { sprintf(error_line, "[%s:%i] ", __FILE__, __LINE__); longjmp(error_pos, 1); } \
     } while (false)
 
-jmp_buf error_pos;
+
+/* In the event of an error, this global string will store an error's message. */
 char error_line[64];
+
+/* In the event of an error, this global buffer will store an error's position. */ 
+jmp_buf error_pos;
 
 /* Colors available through ncurses. Can be used as foreground or background colors. */
 enum colors {

@@ -1,19 +1,17 @@
 #include <signal.h>
 #include "common.h"
 
-/* Value of KEY when CTRL key is being help down. */
+/* Value of KEY when CTRL key is subsequently being held down (e.g. ^d and ^u.) */
 #define CTRL(key) ((key) & 0x1F)
 
-/* ... */
-
+/* Move up or down N lines in the buffer. */
 static void move_line(int n)
 {
     int index = buf.index + (n * view.bpline);
     buf_setindex(index, buf.nybble);
 }
 
-/* ... */
-
+/* Move left or right N lines in the buffer. */
 static void move_col(int n)
 {
     if (buf.mode == HEX) {
@@ -29,18 +27,19 @@ static void move_col(int n)
         } else {
             buf_setindex(index, false);
         }
-    } else { /* ASCII mode is one-to-one in regards of INDEX to COLUMNS. */
+    } else { 
+        /* ASCII mode is one-to-one in regards of INDEX to COLUMNS. */
         buf_setindex(buf.index + n, false);
     }
 }
 
-/* ... */
-
+/* Suspend the program. */
 static void suspend()
 {
     kill(getpid(), SIGTSTP);
 }
 
+/* Toggle the buffer's editing mode between HEX and ASCII. */
 static void toggle_mode()
 {
     if (buf.mode == HEX) {
@@ -51,13 +50,14 @@ static void toggle_mode()
     }
 }
 
+/* Set the buffer's editing state. */
 static void set_state(states_t state)
 {
     buf.state = state;
 }
 
-/* ... */
-
+/* Replace the current INDEX in the buffer with the given CH value; however, if
+   CH is a backspace character, revert the current character at INDEX. */
 static void replace_char(char ch)
 {
     bool is_backspace = (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 127);
@@ -70,16 +70,14 @@ static void replace_char(char ch)
     }
 }
 
-/* ... */
-
+/* Go to the beginning of the current line. */
 static void goto_line_beg()
 {
     int index = buf.index - (buf.index % view.bpline);
     buf_setindex(index, false);
 }
 
-/* ... */
-
+/* Go to the end of the current line. */
 static void goto_line_end()
 {
     int index = (buf.index - (buf.index % view.bpline)) + (view.bpline - 1);
@@ -89,52 +87,46 @@ static void goto_line_end()
         buf_setindex(index, true);
 }
 
-/* ... */
-
+/* Skip forwards in the buffer by a byte group. */
 static void goto_grp_next()
 {
     int index = buf.index + (view.bpgrp - (buf.index % view.bpgrp));
     buf_setindex(index, false);
 }
 
-/* ... */
-
+/* Skip backwards in the buffer by a byte group. */
 static void goto_grp_prev()
 {
     if (buf.index % view.bpgrp) {
-        // go to beginning of current segment
+        /* Go to beginning of current byte group. */
         buf_setindex(buf.index - (buf.index % view.bpgrp), false);
     } else {
-        // go to beginning of previous segment
+        /* Go to beginning of previous byte group. */
         buf_setindex(buf.index - view.bpgrp, false);
     }
 }
 
-/* ... */
-
+/* Go to the beginning of the buffer. */
 static void goto_buffer_beg()
 {
     buf_setindex(0, false);
 }
 
-/* ... */
-
+/* Go to the end of the buffer. */
 static void goto_buffer_end()
 {
     int index = buf.size - (buf.size % view.bpline);
     buf_setindex(index, false);
 }
 
-/* ... */
-
+/* Go down half a screenful in the buffer. */
 static void goto_half_next()
 {
     int index = buf.index + ((LINES / 2) * view.bpline);
     buf_setindex(index, buf.nybble);
 }
 
-/* ... */
-
+/* Go up half a screenful in the buffer. */
 static void goto_half_prev()
 {
     int index = buf.index - ((LINES / 2) * view.bpline);

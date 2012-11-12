@@ -4,9 +4,9 @@
 struct {
     int edge;           /* Line where the top edge of the visible buffer is. */
     int bpaddr;         /* Bytes to show per line in the address panel. */
-    int bpline;         /* Bytes to show per line in the hex/ascii panels. */
-    int bpgrp;          /* Bytes to show per space delimited hex group. */
-    bool help;          /* Whether or not the help menu is being displayed. */
+    int bpline;         /* Bytes to show per line in the HEX and ASCII panels. */
+    int bpgrp;          /* Bytes to show per each space delimited HEX group. */
+    bool help;          /* Whether or not the help menu is currently active. */
     WINDOW *_addrwin;
     WINDOW *_hexwin;     
     WINDOW *_asciiwin;  
@@ -16,6 +16,9 @@ struct {
     PANEL *_asciipan;
     PANEL *_msgpan; 
 } view;                 
+
+/* Global help string describing available control keys. */
+const char *controls;
 
 /* Create the needed ncurses windows and panels with sizes determined by how many 
    bytes of information each window will show. */
@@ -30,7 +33,7 @@ void view_clear();
 /* Draw the status bar. */
 void view_status();
 
-/* Draw the cursor at the given `line` and `col`, within the `mode` panel. */
+/* Display the cursor in the current editing panel. */
 void view_cursor();
 
 /* Update the ncurses panels after drawing the view. */

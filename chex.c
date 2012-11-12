@@ -5,6 +5,7 @@
 #define BYTES_PER_LINE 16
 #define BYTES_PER_GROUP 2
 
+/* Let ncurses take over the terminal and initialize colors. */
 void ncurses_init(bool use_colors)
 {
     initscr();
@@ -32,19 +33,12 @@ void ncurses_init(bool use_colors)
     }
 }
 
+/* Print usage information for --help. */
 void usage(char *argv[])
 {
     printf("usage: %s [file]\n", argv[0]);
     printf("controls:\n");
-    printf("    h j k l     move up, down, left, right\n");
-    printf("    ^u ^d       page up, page down\n");
-    printf("    g G         first, last line\n");
-    printf("    ^ $         start, end of line\n");
-    printf("    R           replace mode\n");
-    printf("    escape      normal mode\n");
-    printf("    ^w          write\n");
-    printf("    ^q          quit\n");
-    printf("    ?           help\n");
+    printf(controls);
 }
 
 int main(int argc, char *argv[])
@@ -56,10 +50,13 @@ int main(int argc, char *argv[])
 
     char *filename = argv[1];
     int status = setjmp(error_pos);
+
     if (status == 0) {
         ncurses_init(true);
         buf_init(filename);
         view_init(BYTES_PER_ADDR, BYTES_PER_LINE, BYTES_PER_GROUP);
+
+        /* Main event-loop routing key presses and updating the buffer's display. */
         do { view_display(); } while (route(getch()));
     }
 
@@ -67,7 +64,8 @@ int main(int argc, char *argv[])
     view_free();
     endwin();
 
-    if (status > 0) { /* Critical error somewhere in the program. */
+    /* Critical error somewhere in the program brought us here. */
+    if (status > 0) { 
         perror(error_line);
         exit(errno);
     }

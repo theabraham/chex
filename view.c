@@ -1,11 +1,14 @@
 #include "common.h"
 
-// Given `b` bytes, figure out how many columns wide a window is.
-#define ADDR_COLS(b)        ((b)+1)         // takes into account ':' character
-#define HEX_COLS(b, seg)    ((b*2)+(b/seg)) // hex segments plus spaces inbetween
-#define ASCII_COLS(b)       (b)      
-#define EDITOR_LINES        (LINES - 1)
+/* Given B bytes, figure out how many columns wide a panel will need to be. */
+#define ADDR_COLS(b)        ((b)+1)         /* +1 for ':' character. */
+#define HEX_COLS(b, seg)    ((b*2)+(b/seg)) /* Hex groups plus spaces inbetween. */
+#define ASCII_COLS(b)       (b)             /* One-to-one correspondence with byte size. */
 
+/* Number of lines visible in the buffer (-1 to account for status bar.) */
+#define EDITOR_LINES (LINES - 1)    
+
+/* Number of lines the buffer could take. */
 #define LINES_IN_BUFFER (buf.size / view.bpline)
 
 /* The INDEX's current column within a line. */
@@ -16,6 +19,16 @@
 #define CURSOR_LINE ((buf.index / view.bpline) - view.edge)
 #define CURSOR_COL (buf.mode == HEX ? ((INDEX_COL * 2) + (INDEX_COL / view.bpgrp) + buf.nybble) \
                                     : (buf.index % view.bpline))
+
+const char *controls = "h j k l    move up, down, left, right\n"
+                       "^u ^d      page up, page down\n"
+                       "g G        first, last line\n"
+                       "^ $        start, end of line\n"
+                       "R          replace mode\n"
+                       "escape     normal mode\n"
+                       "^w         write\n"
+                       "^q         quit\n"
+                       "?          help\n";
 
 /* Moves the EDGE by LINES. If the new EDGE would be out of bounds, set it to
    either the first or last line in the buffer. */
@@ -31,13 +44,13 @@ static void edge_move(int lines)
     }
 }
 
-/* Return the INDEX that marks the beginning of the currently visible buffer. */
+/* Return the INDEX marking the beginning of the currently visible buffer segment. */
 static int edge_beg()
 {
     return view.edge * view.bpline;
 }
 
-/* Returns the INDEX that marks the end of the currently visible buffer. */
+/* Return the INDEX marking the end of the currently visible buffer segment. */
 static int edge_end()
 {
     int end = edge_beg() + (view.bpline * EDITOR_LINES) - 1;
@@ -59,9 +72,9 @@ void view_init(int bpaddr, int bpline, int bpgrp)
     view.bpaddr = bpaddr;
     view.bpline = bpline;
     view.bpgrp = bpgrp;
-    view._addrwin = newwin(LINES-1, ADDR_COLS(bpaddr), 0, 0);
-    view._hexwin = newwin(LINES-1, HEX_COLS(bpline, bpgrp), 0, ADDR_COLS(bpaddr)+1);
-    view._asciiwin = newwin(LINES-1, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline, bpgrp)+1);
+    view._addrwin = newwin(EDITOR_LINES, ADDR_COLS(bpaddr), 0, 0);
+    view._hexwin = newwin(EDITOR_LINES, HEX_COLS(bpline, bpgrp), 0, ADDR_COLS(bpaddr)+1);
+    view._asciiwin = newwin(EDITOR_LINES, ASCII_COLS(bpline), 0, ADDR_COLS(bpaddr)+HEX_COLS(bpline, bpgrp)+1);
     view._msgwin = newwin(1, COLS, LINES-1, 0);
     view._addrpan = new_panel(view._addrwin);
     view._hexpan = new_panel(view._hexwin);
@@ -110,18 +123,10 @@ void view_cursor()
 
 void view_help()
 {
-    box(stdscr, false, false);
     wattrset(stdscr, A_BOLD);
-    mvwprintw(stdscr, (LINES/2)-4, (COLS/2)-3, "CONTROLS");
+    wprintw(stdscr, "Controls (press '?' to exit):\n");
     wattrset(stdscr, A_NORMAL);
-    mvwprintw(stdscr, (LINES/2)-3, (COLS/2)-6, "right - right/h");
-    mvwprintw(stdscr, (LINES/2)-2, (COLS/2)-5, "left - left/l");
-    mvwprintw(stdscr, (LINES/2)-1, (COLS/2)-7, "rotate - up/k");
-    mvwprintw(stdscr, (LINES/2)+0, (COLS/2)-5, "down - down/j");
-    mvwprintw(stdscr, (LINES/2)+1, (COLS/2)-5, "drop - space");
-    mvwprintw(stdscr, (LINES/2)+2, (COLS/2)-6, "pause - p");
-    mvwprintw(stdscr, (LINES/2)+3, (COLS/2)-9, "controls - ?");
-    mvwprintw(stdscr, (LINES/2)+4, (COLS/2)-5, "quit - q");
+    wprintw(stdscr, controls);
     hide_panel(view._addrpan);
     hide_panel(view._hexpan);
     hide_panel(view._asciipan);
@@ -146,6 +151,7 @@ void view_display()
     bool use_space, is_ascii, on_current_line, has_changed;
     edge_adjust();
     for (index = edge_beg(); index <= edge_end(); index++) {
+        /* Information about the current character byte. */
         ch = buf.mem[index];
         use_space = (((index + 1) % view.bpgrp) == 0);
         is_ascii = (ch >= ' ' && ch < 127);
@@ -159,19 +165,19 @@ void view_display()
             wattron(view._asciiwin, A_BOLD);
         }
 
-        /* Draw address panel. */
+        /* If necessary, add another address line. */
         if (index % view.bpline == 0) {
             wprintw(view._addrwin, "%8x:", index);
         }
 
-        /* Draw hex panel. */
+        /* Append byte to hex panel. */
         if (buf.mode == HEX) wattron(view._hexwin, COLOR_PAIR(WHITE));
         if (has_changed) wattron(view._hexwin, COLOR_PAIR(YELLOW));
         wprintw(view._hexwin, "%02x%s", ch, (use_space ? " " : ""));
         if (has_changed) wattroff(view._hexwin, COLOR_PAIR(YELLOW));
         if (buf.mode == HEX) wattroff(view._hexwin, COLOR_PAIR(WHITE));
 
-        /* Draw ascii panel. */
+        /* Append byte to ascii panel. */
         if (buf.mode == ASCII) wattron(view._asciiwin, COLOR_PAIR(WHITE));
         if (has_changed) wattron(view._asciiwin, COLOR_PAIR(YELLOW));
         waddch(view._asciiwin, (is_ascii ? ch : '.'));
