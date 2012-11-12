@@ -60,7 +60,7 @@ static void set_state(states_t state)
    CH is a backspace character, revert the current character at INDEX. */
 static void replace_char(char ch)
 {
-    bool is_backspace = (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 127);
+    bool is_backspace = (ch == 127);
     if (is_backspace) { 
         move_col(-1);
         buf_revertchar();

@@ -38,7 +38,7 @@ void usage(char *argv[])
 {
     printf("usage: %s [file]\n", argv[0]);
     printf("controls:\n");
-    printf(controls);
+    printf("%s", controls);
 }
 
 int main(int argc, char *argv[])
