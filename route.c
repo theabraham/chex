@@ -1,4 +1,7 @@
+#define _POSIX_SOURCE
+
 #include <signal.h>
+
 #include "common.h"
 
 /* Value of KEY when CTRL key is subsequently being held down (e.g. ^d and ^u.) */
