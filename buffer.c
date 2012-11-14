@@ -1,5 +1,10 @@
 #include "common.h"
 
+int ishexnumber(int c)
+{
+    return isdigit(c) || (c >= 97 && c <= 102) || (c >= 65 && c <= 70);
+}
+
 /* Get FP's size in bytes; keeps FP's file position indicator (fpi) at the
    beginning. Return -1 on error. */
 static long filesize(FILE *fp)
