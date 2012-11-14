@@ -48,7 +48,8 @@ void buf_init(char *filename)
 
 void buf_free()
 {
-    fclose(buf.fp);
+    if ( buf.fp )
+        fclose(buf.fp);
     free(buf.mem);
 }
 
