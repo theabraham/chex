@@ -1,6 +1,6 @@
 #include "common.h"
 
-int ishexnumber(int c)
+static int is_hex_number(int c)
 {
     return isdigit(c) || (c >= 97 && c <= 102) || (c >= 65 && c <= 70);
 }
@@ -21,7 +21,7 @@ static long filesize(FILE *fp)
 /* If CH is a hex character, return its bit value; otherwise, return -1. */
 static char hex2bit(char ch) {
     char hexstr[2] = { ch, '\0' };
-    if (!ishexnumber(ch))
+    if (!is_hex_number(ch))
         return -1;
     return strtol(hexstr, NULL, 16);
 }
@@ -86,7 +86,7 @@ void buf_setindex(int index, bool nybble)
 
 void buf_putchar(char ch)
 {
-    if (buf.mode == HEX && ishexnumber(ch)) {
+    if (buf.mode == HEX && is_hex_number(ch)) {
         char orig = buf.mem[buf.index];
         ch = hex2bit(ch);
         if (buf.nybble) { /* Write to low bits. */
