@@ -1,6 +1,6 @@
 #include "common.h"
 
-int is_hex_number(int c)
+static int is_hex_number(int c)
 {
     return isdigit(c) || (c >= 97 && c <= 102) || (c >= 65 && c <= 70);
 }
