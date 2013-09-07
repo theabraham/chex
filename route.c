@@ -174,7 +174,11 @@ bool route(int ch)
         case '^': goto_line_beg(); break;
         case '$': goto_line_end(); break;
         case 'd': goto_half_next(); break;
+        case CTRL('d'): goto_half_next(); break;
+        case CTRL('f'): goto_half_next(); break;
         case 'u': goto_half_prev(); break;
+        case CTRL('u'): goto_half_prev(); break;
+        case CTRL('b'): goto_half_prev(); break;
         case '?': view.help = !view.help; break;
         default:  break;                                    
     }

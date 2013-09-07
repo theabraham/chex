@@ -22,6 +22,7 @@
 
 const char *controls = "h j k l    move up, down, left, right\n"
                        "^u ^d      page up, page down\n"
+                       "^b ^f      page backwards, page forwards\n"
                        "g G        first, last line\n"
                        "^ $        start, end of line\n"
                        "R          replace mode\n"
