@@ -112,7 +112,7 @@ void view_status()
 {
     char *mode_str = (buf.mode == HEX ? "HEX" : "ASCII");
     char *state_str = (buf.state == ESCAPE ? "" : "REPLACE");
-    wprintw(view._msgwin, "\"%s\" [%i/%i] %-5s %-7s", buf.filename, buf.index, buf.size, mode_str, state_str);
+    wprintw(view._msgwin, "\"%s\" [%i/%i] %-5s %-7s (%.3u)", buf.filename, buf.index, buf.size, mode_str, state_str,*(buf.mem + buf.index));
 }
 
 void view_cursor()
